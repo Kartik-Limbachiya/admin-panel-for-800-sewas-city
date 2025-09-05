@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { DocumentViewer } from "@/components/document-viewer"
 import { StatusUpdateModal } from "@/components/status-update-modal"
@@ -9,12 +9,24 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Edit, User, MapPin, Phone, Mail, Briefcase, Home, Calendar } from "lucide-react"
+import {
+  ArrowLeft,
+  Edit,
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  Briefcase,
+  Home,
+  Calendar,
+} from "lucide-react"
 import type { HousingApplication } from "@/types/application"
 
 export default function ApplicationDetailPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const router = useRouter()
+
   const [application, setApplication] = useState<HousingApplication | null>(null)
   const [loading, setLoading] = useState(true)
   const [showStatusModal, setShowStatusModal] = useState(false)
@@ -22,11 +34,22 @@ export default function ApplicationDetailPage() {
   useEffect(() => {
     async function fetchApplication() {
       try {
-        const response = await fetch(`/api/applications/${params.id}`)
+        const createdAt = searchParams.get("createdAt")
+        if (!createdAt) {
+          console.error("❌ Missing createdAt in query params")
+          router.push("/applications")
+          return
+        }
+
+        const response = await fetch(
+          `/api/applications/${params.id}?createdAt=${encodeURIComponent(createdAt)}`
+        )
+
         if (response.ok) {
           const data = await response.json()
-          setApplication(data)
+          setApplication(data.application)
         } else {
+          console.error("❌ Failed to fetch application:", await response.text())
           router.push("/applications")
         }
       } catch (error) {
@@ -40,7 +63,7 @@ export default function ApplicationDetailPage() {
     if (params.id) {
       fetchApplication()
     }
-  }, [params.id, router])
+  }, [params.id, router, searchParams])
 
   const handleStatusUpdate = (newStatus: string) => {
     if (application) {
@@ -78,7 +101,9 @@ export default function ApplicationDetailPage() {
       <DashboardLayout>
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-foreground">Application Not Found</h1>
-          <p className="text-muted-foreground mt-2">The requested application could not be found.</p>
+          <p className="text-muted-foreground mt-2">
+            The requested application could not be found.
+          </p>
           <Button className="mt-4" onClick={() => router.push("/applications")}>
             Back to Applications
           </Button>
@@ -97,12 +122,17 @@ export default function ApplicationDetailPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{application.fullName}</h1>
+              <h1 className="text-3xl font-bold text-foreground">
+                {application.fullName}
+              </h1>
               <p className="text-muted-foreground">Application Details</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className={getStatusColor(application.status || "Pending")}>
+            <Badge
+              variant="secondary"
+              className={getStatusColor(application.status || "Pending")}
+            >
               {application.status || "Pending"}
             </Badge>
             <Button onClick={() => setShowStatusModal(true)}>
@@ -124,25 +154,33 @@ export default function ApplicationDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Full Name
+                  </label>
                   <p className="font-medium">{application.fullName}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Father's Name</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Father's Name
+                  </label>
                   <p className="font-medium">{application.fatherName}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Date of Birth
+                  </label>
                   <p className="font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     {new Date(application.dateOfBirth).toLocaleDateString()}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Gender
+                  </label>
                   <p className="font-medium">{application.gender}</p>
                 </div>
               </div>
@@ -151,14 +189,18 @@ export default function ApplicationDetailPage() {
 
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Mobile Number</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Mobile Number
+                  </label>
                   <p className="font-medium flex items-center gap-2">
                     <Phone className="h-4 w-4" />
                     {application.mobileNumber}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email Address</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Email Address
+                  </label>
                   <p className="font-medium flex items-center gap-2">
                     <Mail className="h-4 w-4" />
                     {application.emailAddress}
@@ -170,21 +212,27 @@ export default function ApplicationDetailPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Occupation</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Occupation
+                  </label>
                   <p className="font-medium flex items-center gap-2">
                     <Briefcase className="h-4 w-4" />
                     {application.occupation}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Monthly Income</label>
-                  <p className="font-medium">₹{application.monthlyIncome.toLocaleString()}</p>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Monthly Income
+                  </label>
+                  <p className="font-medium">
+                    ₹{Number(application.monthlyIncome).toLocaleString()}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Address & Housing Information */}
+          {/* Address & Housing */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -194,12 +242,16 @@ export default function ApplicationDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Permanent Address</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Permanent Address
+                </label>
                 <p className="font-medium">{application.permanentAddress}</p>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Current Address</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Current Address
+                </label>
                 <p className="font-medium">{application.currentAddress}</p>
               </div>
 
@@ -207,14 +259,18 @@ export default function ApplicationDetailPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Preferred City</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Preferred City
+                  </label>
                   <p className="font-medium flex items-center gap-2">
                     <Home className="h-4 w-4" />
                     {application.preferredCity}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Housing Preference</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Housing Preference
+                  </label>
                   <p className="font-medium">{application.housingPreference}</p>
                 </div>
               </div>
@@ -222,27 +278,43 @@ export default function ApplicationDetailPage() {
               <Separator />
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Application Date</label>
-                <p className="font-medium">{new Date(application.createdAt).toLocaleDateString()}</p>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Application Date
+                </label>
+                <p className="font-medium">
+                  {new Date(application.createdAt).toLocaleDateString()}
+                </p>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Agreements</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Agreements
+                </label>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <Badge variant={application.legalAcknowledgment ? "default" : "secondary"}>
+                    <Badge
+                      variant={
+                        application.legalAcknowledgment ? "default" : "secondary"
+                      }
+                    >
                       {application.legalAcknowledgment ? "✓" : "✗"}
                     </Badge>
                     <span className="text-sm">Legal Acknowledgment</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={application.termsAgreement ? "default" : "secondary"}>
+                    <Badge
+                      variant={application.termsAgreement ? "default" : "secondary"}
+                    >
                       {application.termsAgreement ? "✓" : "✗"}
                     </Badge>
                     <span className="text-sm">Terms Agreement</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={application.marketingConsent ? "default" : "secondary"}>
+                    <Badge
+                      variant={
+                        application.marketingConsent ? "default" : "secondary"
+                      }
+                    >
                       {application.marketingConsent ? "✓" : "✗"}
                     </Badge>
                     <span className="text-sm">Marketing Consent</span>

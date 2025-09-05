@@ -1,34 +1,63 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getApplicationById, updateApplicationStatus } from "@/lib/dynamodb"
+import { NextResponse } from "next/server";
+import { DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+const client = new DynamoDBClient({ region: process.env.AWS_REGION });
+
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const application = await getApplicationById(params.id)
+    const { searchParams } = new URL(req.url);
+    const createdAt = searchParams.get("createdAt");
 
-    if (!application) {
-      return NextResponse.json({ error: "Application not found" }, { status: 404 })
+    if (!createdAt) {
+      return NextResponse.json(
+        { success: false, message: "createdAt query param is required" },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json(application)
-  } catch (error) {
-    console.error("API Error:", error)
-    return NextResponse.json({ error: "Failed to fetch application" }, { status: 500 })
-  }
-}
+    const command = new GetItemCommand({
+      TableName: process.env.DYNAMODB_TABLE!,
+      Key: {
+        id: { S: params.id },
+        createdAt: { S: createdAt }, // ✅ include sort key
+      },
+    });
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const { status } = await request.json()
+    const response = await client.send(command);
 
-    if (!["Pending", "Approved", "Rejected"].includes(status)) {
-      return NextResponse.json({ error: "Invalid status" }, { status: 400 })
+    if (!response.Item) {
+      return NextResponse.json(
+        { success: false, message: "Application not found" },
+        { status: 404 }
+      );
     }
 
-    await updateApplicationStatus(params.id, status)
+    const item = response.Item;
+    const application = {
+      id: item.id.S,
+      createdAt: item.createdAt.S,
+      fullName: item.fullName?.S,
+      fatherName: item.fatherName?.S,
+      emailAddress: item.emailAddress?.S,
+      mobileNumber: item.mobileNumber?.S,
+      preferredCity: item.preferredCity?.S,
+      housingPreference: item.housingPreference?.S,
+      documents: item.documents?.M
+        ? Object.fromEntries(
+            Object.entries(item.documents.M).map(([k, v]) => [k, (v as any).S])
+          )
+        : {},
+      legalAcknowledgment: item.legalAcknowledgment?.BOOL ?? false,
+      termsAgreement: item.termsAgreement?.BOOL ?? false,
+      marketingConsent: item.marketingConsent?.BOOL ?? false,
+    };
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error("API Error:", error)
-    return NextResponse.json({ error: "Failed to update application status" }, { status: 500 })
+    return NextResponse.json({ success: true, application });
+  } catch (error: any) {
+    console.error("Admin detail fetch error:", error);
+    return NextResponse.json(
+      { success: false, message: error.message },
+      { status: 500 }
+    );
   }
 }

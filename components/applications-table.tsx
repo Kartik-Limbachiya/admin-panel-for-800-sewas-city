@@ -167,10 +167,15 @@ export function ApplicationsTable({ applications, loading, onSearch, onFilter }:
                     <TableCell>{new Date(application.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/applications/${application.id}`}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </Link>
+                        <Link
+  href={`/applications/${application.id}?createdAt=${encodeURIComponent(
+    application.createdAt
+  )}`}
+>
+  <Eye className="h-4 w-4 mr-2" />
+  View
+</Link>
+
                       </Button>
                     </TableCell>
                   </TableRow>
