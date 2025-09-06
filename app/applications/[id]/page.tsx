@@ -123,7 +123,7 @@ export default function ApplicationDetailPage() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                {application.fullName}
+                {application.fullName || "Unknown Applicant"}
               </h1>
               <p className="text-muted-foreground">Application Details</p>
             </div>
@@ -157,13 +157,13 @@ export default function ApplicationDetailPage() {
                   <label className="text-sm font-medium text-muted-foreground">
                     Full Name
                   </label>
-                  <p className="font-medium">{application.fullName}</p>
+                  <p className="font-medium">{application.fullName || "Not provided"}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Father's Name
                   </label>
-                  <p className="font-medium">{application.fatherName}</p>
+                  <p className="font-medium">{application.fatherName || "Not provided"}</p>
                 </div>
               </div>
 
@@ -174,14 +174,28 @@ export default function ApplicationDetailPage() {
                   </label>
                   <p className="font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {new Date(application.dateOfBirth).toLocaleDateString()}
+                    {application.dateOfBirth && application.dateOfBirth !== "" 
+                      ? (() => {
+                          try {
+                            return new Date(application.dateOfBirth).toLocaleDateString()
+                          } catch (e) {
+                            return application.dateOfBirth
+                          }
+                        })()
+                      : "Not provided"
+                    }
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Gender
                   </label>
-                  <p className="font-medium">{application.gender}</p>
+                  <p className="font-medium">
+                    {application.gender && application.gender !== "" 
+                      ? application.gender.charAt(0).toUpperCase() + application.gender.slice(1) 
+                      : "Not provided"
+                    }
+                  </p>
                 </div>
               </div>
 
@@ -194,7 +208,7 @@ export default function ApplicationDetailPage() {
                   </label>
                   <p className="font-medium flex items-center gap-2">
                     <Phone className="h-4 w-4" />
-                    {application.mobileNumber}
+                    {application.mobileNumber || "Not provided"}
                   </p>
                 </div>
                 <div>
@@ -203,7 +217,7 @@ export default function ApplicationDetailPage() {
                   </label>
                   <p className="font-medium flex items-center gap-2">
                     <Mail className="h-4 w-4" />
-                    {application.emailAddress}
+                    {application.emailAddress || "Not provided"}
                   </p>
                 </div>
               </div>
@@ -217,7 +231,7 @@ export default function ApplicationDetailPage() {
                   </label>
                   <p className="font-medium flex items-center gap-2">
                     <Briefcase className="h-4 w-4" />
-                    {application.occupation}
+                    {application.occupation || "Not provided"}
                   </p>
                 </div>
                 <div>
@@ -225,7 +239,28 @@ export default function ApplicationDetailPage() {
                     Monthly Income
                   </label>
                   <p className="font-medium">
-                    ₹{Number(application.monthlyIncome).toLocaleString()}
+                    {(() => {
+                      if (!application.monthlyIncome || application.monthlyIncome === "NaN" || application.monthlyIncome === "") {
+                        return "Not provided"
+                      }
+                      
+                      // Handle different income range formats
+                      const income = application.monthlyIncome.toString()
+                      
+                      if (income.includes('₹')) {
+                        return income
+                      }
+                      
+                      // Map income range values to display text
+                      const incomeRanges: Record<string, string> = {
+                        'below-25000': 'Below ₹25,000',
+                        '25000-50000': '₹25,000 - ₹50,000',
+                        '50000-100000': '₹50,000 - ₹1,00,000',
+                        'above-100000': 'Above ₹1,00,000'
+                      }
+                      
+                      return incomeRanges[income] || `₹${income}`
+                    })()}
                   </p>
                 </div>
               </div>
@@ -245,14 +280,18 @@ export default function ApplicationDetailPage() {
                 <label className="text-sm font-medium text-muted-foreground">
                   Permanent Address
                 </label>
-                <p className="font-medium">{application.permanentAddress}</p>
+                <p className="font-medium">
+                  {application.permanentAddress || "Not provided"}
+                </p>
               </div>
 
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
                   Current Address
                 </label>
-                <p className="font-medium">{application.currentAddress}</p>
+                <p className="font-medium">
+                  {application.currentAddress || "Same as permanent address"}
+                </p>
               </div>
 
               <Separator />
@@ -264,14 +303,24 @@ export default function ApplicationDetailPage() {
                   </label>
                   <p className="font-medium flex items-center gap-2">
                     <Home className="h-4 w-4" />
-                    {application.preferredCity}
+                    {application.preferredCity || "Not provided"}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Housing Preference
                   </label>
-                  <p className="font-medium">{application.housingPreference}</p>
+                  <p className="font-medium">
+                    {(() => {
+                      if (!application.housingPreference) return "Not provided"
+                      
+                      // Format housing preference display
+                      const housing = application.housingPreference.toLowerCase()
+                      if (housing === "2bhk") return "2 BHK - 540 sq. ft."
+                      if (housing === "3bhk") return "3 BHK - 720 sq. ft."
+                      return application.housingPreference
+                    })()}
+                  </p>
                 </div>
               </div>
 
@@ -282,7 +331,10 @@ export default function ApplicationDetailPage() {
                   Application Date
                 </label>
                 <p className="font-medium">
-                  {new Date(application.createdAt).toLocaleDateString()}
+                  {application.createdAt 
+                    ? new Date(application.createdAt).toLocaleDateString()
+                    : "Not available"
+                  }
                 </p>
               </div>
 
@@ -296,6 +348,11 @@ export default function ApplicationDetailPage() {
                       variant={
                         application.legalAcknowledgment ? "default" : "secondary"
                       }
+                      className={
+                        application.legalAcknowledgment 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-red-100 text-red-800"
+                      }
                     >
                       {application.legalAcknowledgment ? "✓" : "✗"}
                     </Badge>
@@ -304,6 +361,11 @@ export default function ApplicationDetailPage() {
                   <div className="flex items-center gap-2">
                     <Badge
                       variant={application.termsAgreement ? "default" : "secondary"}
+                      className={
+                        application.termsAgreement 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-red-100 text-red-800"
+                      }
                     >
                       {application.termsAgreement ? "✓" : "✗"}
                     </Badge>
@@ -314,10 +376,15 @@ export default function ApplicationDetailPage() {
                       variant={
                         application.marketingConsent ? "default" : "secondary"
                       }
+                      className={
+                        application.marketingConsent 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-gray-100 text-gray-800"
+                      }
                     >
                       {application.marketingConsent ? "✓" : "✗"}
                     </Badge>
-                    <span className="text-sm">Marketing Consent</span>
+                    <span className="text-sm">Marketing Consent (Optional)</span>
                   </div>
                 </div>
               </div>
@@ -326,7 +393,10 @@ export default function ApplicationDetailPage() {
         </div>
 
         {/* Documents */}
-        <DocumentViewer userId={application.id} documents={application.documents} />
+        <DocumentViewer 
+          userId={application.id} 
+          documents={application.documents || {}} 
+        />
 
         {/* Status Update Modal */}
         <StatusUpdateModal
@@ -334,7 +404,7 @@ export default function ApplicationDetailPage() {
           onClose={() => setShowStatusModal(false)}
           currentStatus={application.status || "Pending"}
           applicationId={application.id}
-          applicantName={application.fullName}
+          applicantName={application.fullName || "Unknown Applicant"}
           onStatusUpdate={handleStatusUpdate}
         />
       </div>
